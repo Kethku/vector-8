@@ -15,8 +15,8 @@ window.addEventListener('mousemove', e => {
   mouseY = (window.innerHeight - e.clientY) - window.innerHeight / 2;
 });
 
-let count = 10;
-let distance = 12;
+let count = 20;
+let distance = 50;
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -29,7 +29,12 @@ const App: React.FC = () => {
             let circleY = y * distance;
             let dx = circleX - mouseX;
             let dy = circleY - mouseY;
-            lyonAPI.fillCircle(circleX, circleY, Math.min(Math.sqrt(dx * dx + dy * dy) / 10, distance));
+            let radius = Math.sqrt(dx * dx + dy * dy) / 10;
+            if (radius > distance) {
+              lyonAPI.fillRectangle(circleX - distance / 2, circleY - distance / 2, distance, distance);
+            } else {
+              lyonAPI.fillCircle(circleX, circleY, radius);
+            }
           }
         }
         draw(lyonAPI);

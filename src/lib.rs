@@ -1,16 +1,16 @@
 extern crate console_error_panic_hook;
 extern crate lyon;
-extern crate rand;
 extern crate wasm_bindgen;
+extern crate web_sys;
 
 use lyon::math::{Point, point, rect, size};
 use lyon::tessellation::geometry_builder::{GeometryBuilder, VertexId, GeometryBuilderError};
 use lyon::tessellation::{StrokeVertex, FillVertex, StrokeOptions, FillOptions, Count};
 use lyon::tessellation::basic_shapes::*;
-use rand::Rng;
 use std::cell::RefCell;
 use std::u32;
 use wasm_bindgen::prelude::*;
+use web_sys::console::{log_1 as log};
 
 pub trait HasPosition {
   fn get_position(&self) -> Point;
@@ -90,13 +90,13 @@ impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<
     }
 
     let len = self.data.positions.len();
-    Ok(VertexId(((len / 2 - 1) as u32) - self.vertex_offset))
+    Ok(VertexId((len as u32) / 2 - 1))
   }
 
   fn add_triangle(&mut self, a: VertexId, b: VertexId, c: VertexId) {
-    self.data.indices.push((a + self.vertex_offset as u32).into());
-    self.data.indices.push((b + self.vertex_offset as u32).into());
-    self.data.indices.push((c + self.vertex_offset as u32).into());
+    self.data.indices.push(a.into());
+    self.data.indices.push(b.into());
+    self.data.indices.push(c.into());
   }
 
   fn abort_geometry(&mut self) {
@@ -148,7 +148,7 @@ pub extern fn js_fill_circle(x: f32, y: f32, r: f32) {
     fill_circle(
       point(x, y),
       r,
-      &FillOptions::DEFAULT,
+      &FillOptions::tolerance(0.25),
       &mut ToFloatArrayWithColor::new([1.0, 1.0, 1.0, 1.0], &mut output))
   });
 }
