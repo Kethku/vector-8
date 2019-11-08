@@ -52,7 +52,8 @@ const config: webpack.Configuration = {
       languages: ['javascript']
     }),
     new WasmPackPlugin({
-      crateDirectory: path.resolve(__dirname, ".")
+      crateDirectory: path.resolve(__dirname, "."),
+      forceMode: "production"
     })
   ]
 };
