@@ -3,6 +3,7 @@ import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import HtmlWebpackRootPlugin from 'html-webpack-root-plugin';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
+import WasmPackPlugin from '@wasm-tool/wasm-pack-plugin';
 
 const config: webpack.Configuration = {
   mode: 'development',
@@ -49,6 +50,9 @@ const config: webpack.Configuration = {
     new HtmlWebpackRootPlugin(),
     new MonacoWebpackPlugin({
       languages: ['javascript']
+    }),
+    new WasmPackPlugin({
+      crateDirectory: path.resolve(__dirname, ".")
     })
   ]
 };

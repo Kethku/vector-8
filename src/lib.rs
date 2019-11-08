@@ -1,3 +1,4 @@
+extern crate console_error_panic_hook;
 extern crate lyon;
 extern crate rand;
 extern crate wasm_bindgen;
@@ -6,8 +7,8 @@ use lyon::math::{Point, point, rect, size};
 use lyon::tessellation::geometry_builder::{GeometryBuilder, VertexId, GeometryBuilderError};
 use lyon::tessellation::{StrokeVertex, FillVertex, StrokeOptions, FillOptions, Count};
 use lyon::tessellation::basic_shapes::*;
-use std::cell::RefCell;
 use rand::Rng;
+use std::cell::RefCell;
 use std::u32;
 use wasm_bindgen::prelude::*;
 
@@ -65,13 +66,14 @@ impl<'l> ToFloatArrayWithColor<'l> {
 
 impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<'l> {
   fn begin_geometry(&mut self) { 
+    console_error_panic_hook::set_once();
     self.vertex_offset = self.data.positions.len() as u32;
     self.index_offset = self.data.indices.len() as u32;
   }
   fn end_geometry(&mut self) -> Count {
     Count {
-      vertices: self.data.positions.len() as u32 - self.vertex_offset as u32,
-      indices: self.data.indices.len() as u32 - self.index_offset as u32
+      vertices: self.data.positions.len() as u32 - self.vertex_offset,
+      indices: self.data.indices.len() as u32 - self.index_offset
     }
   }
 
@@ -88,7 +90,7 @@ impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<
     }
 
     let len = self.data.positions.len();
-    Ok(VertexId(((len / 2 - 1) as u32) - self.vertex_offset as u32))
+    Ok(VertexId(((len / 2 - 1) as u32) - self.vertex_offset))
   }
 
   fn add_triangle(&mut self, a: VertexId, b: VertexId, c: VertexId) {
@@ -102,7 +104,6 @@ impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<
     self.data.indices.truncate(self.index_offset as usize);
   }
 }
-
 
 thread_local!(static OUTPUT: RefCell<Outputs> = RefCell::new(Outputs::new()));
 

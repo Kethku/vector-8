@@ -6,6 +6,7 @@
   "author": "Keith Simmons",
   "license": "MIT",
   "dependencies": {
+    "@wasm-tool/wasm-pack-plugin": "^1.0.1",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-monaco-editor": "^0.32.1",

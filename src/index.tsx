@@ -15,7 +15,7 @@ window.addEventListener('mousemove', e => {
   mouseY = (window.innerHeight - e.clientY) - window.innerHeight / 2;
 });
 
-let count = 50;
+let count = 10;
 let distance = 12;
 
 const App: React.FC = () => {
