@@ -7,7 +7,6 @@ import { CanvasMounted } from "./component";
 
 import vertex from './shaders/vert.glsl';
 import fragment from './shaders/frag.glsl';
-import {setTolerance} from '../../pkg';
 
 let gl: WebGLRenderingContext = null;
 let spriteProgram: twgl.ProgramInfo = null;
@@ -21,7 +20,7 @@ let canvas: HTMLCanvasElement = null;
 CanvasMounted.Subscribe(async (newCanvas) => {
   canvas = newCanvas;
   resize();
-  gl = newCanvas.getContext("webgl", {alpha: false});
+  gl = newCanvas.getContext("webgl", {alpha: false, preserveDrawingBuffer: true});
   gl.getExtension('OES_element_index_uint');
 
   spriteProgram = twgl.createProgramInfo(gl, [vertex, fragment]);
@@ -47,20 +46,23 @@ export const Resized = new EventManager<[Vector]>();
 function resize() {
   if (canvas != null) {
     let devicePixelRatio = window.devicePixelRatio ?? 1;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+
+    if (canvas.width != canvas.clientWidth * devicePixelRatio ||
+        canvas.height != canvas.clientHeight * devicePixelRatio) {
+      canvas.width = canvas.clientWidth * devicePixelRatio;
+      canvas.height = canvas.clientHeight * devicePixelRatio;
+    }
   }
 
   Resized.Publish(new Vector(canvas.width, canvas.height));
 }
-
-window.addEventListener("resize", resize);
 
 ////////////////
 // Draw Calls //
 ////////////////
 export function draw() {
   if (gl && lyonAPI) {
+    resize();
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     twgl.setUniforms(spriteProgram, {

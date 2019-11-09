@@ -12,6 +12,7 @@ async function canvasMounted(newCanvas: HTMLCanvasElement) {
 export function GameComponent() {
   return <canvas ref={canvasMounted} touch-action="none" style={{
     width: '100%',
-    height: '100%'
+    height: '100%',
+    display: 'block'
   }}/>;
 }

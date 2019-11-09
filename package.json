@@ -10,6 +10,7 @@
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-monaco-editor": "^0.32.1",
+    "realms-shim": "^1.2.1",
     "twgl.js": "^4.13.1"
   },
   "devDependencies": {
