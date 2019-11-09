@@ -2,10 +2,12 @@ import * as twgl from "twgl.js";
 
 import { EventManager } from "../eventManager";
 import { Vector } from "../math";
+import { lyonAPI } from "../lyonAPI";
 import { CanvasMounted } from "./component";
 
 import vertex from './shaders/vert.glsl';
 import fragment from './shaders/frag.glsl';
+import {setTolerance} from '../../pkg';
 
 let gl: WebGLRenderingContext = null;
 let spriteProgram: twgl.ProgramInfo = null;
@@ -44,8 +46,9 @@ export const Resized = new EventManager<[Vector]>();
 
 function resize() {
   if (canvas != null) {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    let devicePixelRatio = window.devicePixelRatio ?? 1;
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
   }
 
   Resized.Publish(new Vector(canvas.width, canvas.height));
@@ -56,15 +59,14 @@ window.addEventListener("resize", resize);
 ////////////////
 // Draw Calls //
 ////////////////
-export function draw(lyonAPI: typeof import("../../pkg")) {
-  if (gl) {
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+export function draw() {
+  if (gl && lyonAPI) {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     twgl.setUniforms(spriteProgram, {
-      u_camera_dimensions: [-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height],
+      u_camera_dimensions: [-1, -canvas.height / canvas.width, 2, 2 * canvas.height / canvas.width],
     });
+    lyonAPI.setTolerance(Math.min(2 / canvas.width, 2 / canvas.height));
 
     spriteArrays.a_position.data = lyonAPI.getPositions();
     spriteArrays.a_color.data = lyonAPI.getColors();
@@ -84,5 +86,5 @@ export function draw(lyonAPI: typeof import("../../pkg")) {
     twgl.drawBufferInfo(gl, bufferInfo, gl.TRIANGLES, spriteArrays.indices.data.length);
   }
 
-  lyonAPI.reset();
+  lyonAPI?.reset();
 }

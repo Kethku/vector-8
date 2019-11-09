@@ -45,7 +45,10 @@ const config: webpack.Configuration = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Vector-8'
+      title: 'Vector-8',
+      meta: {
+        "viewport": "width=device-width, user-scalable=false"
+      }
     }),
     new HtmlWebpackRootPlugin(),
     new MonacoWebpackPlugin({

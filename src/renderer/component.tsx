@@ -2,8 +2,10 @@ import * as React from "react";
 
 import { EventManager } from "../eventManager";
 
+export let currentCanvas: HTMLCanvasElement;
 export const CanvasMounted = new EventManager<[HTMLCanvasElement]>();
 async function canvasMounted(newCanvas: HTMLCanvasElement) {
+  currentCanvas = newCanvas;
   CanvasMounted.Publish(newCanvas);
 }
 
