@@ -143,10 +143,14 @@ fn update_fill_options<F : FnOnce(&mut FillOptions) -> FillOptions>(update: F) {
   });
 }
 
-#[wasm_bindgen(js_name = "setTolerance")]
-pub extern fn js_set_tolerance(pixel_size: f32) {
-  let new_tolerance = pixel_size / 10.0;
-  update_stroke_options(|&mut stroke_options| stroke_options.with_tolerance(new_tolerance));
+#[wasm_bindgen(js_name = "setPixelSize")]
+pub extern fn js_set_pixel_size(pixel_size: f32) {
+  let new_tolerance = pixel_size / 5.0;
+  update_stroke_options(|&mut stroke_options| {
+    stroke_options
+      .with_tolerance(new_tolerance)
+      .with_line_width(pixel_size * 2.0)
+  });
   update_fill_options(|&mut fill_options| fill_options.with_tolerance(new_tolerance));
 }
 

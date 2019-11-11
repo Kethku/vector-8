@@ -1,5 +1,3 @@
-import { currentCanvas } from "./renderer/component";
-
 export let lyonAPI: typeof import("../pkg");
 
 (async () => {
@@ -54,6 +52,6 @@ export const publicAPI = {
 
   clear(color = 0) {
     assertNumber(color);
-    this.rectFill(0, 0, 2, 2 * currentCanvas.height / currentCanvas.width, correctColor(color));
+    this.rectFill(0, 0, 4, 4, correctColor(color));
   }
 };

@@ -1,37 +1,25 @@
 import * as React from 'react';
 import { useRef, useEffect, useState } from 'react';
 import { render } from 'react-dom';
-import Realm from 'realms-shim';
-
-import { draw } from "./renderer/webgl";
-import { GameComponent, currentCanvas } from "./renderer/component";
-import { publicAPI } from "./lyonAPI";
 import MonacoEditor from 'react-monaco-editor';
+import * as monaco from 'monaco-editor';
+
+import { theme } from "./theme";
+import { Game } from "./game";
 
 import './baseStyle.css';
 
-let mouseX = 0;
-let mouseY = 0;
-window.addEventListener('mousemove', e => {
-  if (currentCanvas) {
-    let canvasRect = currentCanvas.getBoundingClientRect();
-    mouseX = (e.clientX - canvasRect.left) * 2 / canvasRect.width - 1;
-    mouseY = -(e.clientY - canvasRect.top) * 2 / canvasRect.width + canvasRect.height / canvasRect.width;
-  }
-});
-
 const initialCode = `
-const count = 300;
+const count = 500;
 
 function initCircle() {
+  let x = Math.random() * 2 - 1;
   return {
-    x: Math.random() * 2 - 1,
-    y: Math.random() * 2 - 1,
+    x,
+    y: 0.5,
     vx: 0,
     vy: 0,
-    radius: Math.pow(
-      (Math.random() * 2 - 1) * 0.4, 
-      3),
+    radius: (x + 1.5) / 50,
     color: Math.floor(
       Math.random() * 7
     ) + 1
@@ -48,7 +36,7 @@ update = (state) => {
 
   let newState = [];
   for (let circle of state) {
-    let { x, y, vx, vy } = circle;
+    let { x, y, vx, vy, radius } = circle;
     let dx = mouseX - x;
     let dy = mouseY - y;
 
@@ -61,8 +49,8 @@ update = (state) => {
       ...circle,
       x: x + vx,
       y: y + vy,
-      vx: vx * 0.99 + ax / 1000,
-      vy: vy * 0.99 + ay / 1000
+      vx: vx * 0.99 + ax / radius / 100000,
+      vy: vy * 0.99 + ay / radius / 100000
     });
   }
 
@@ -80,21 +68,21 @@ draw = (circles) => {
 }
 `.trim();
 
-let realm = null;
-function evalCode(code: string) {
-  realm = Realm.makeRootRealm();
-  for (let key in publicAPI) {
-    realm.global[key] = publicAPI[key];
-  }
-  realm.global.update = (state: any) => state;
-  realm.global.draw = () => {};
-
-  try {
-    realm.evaluate(code);
-  } catch (error) {
-    console.log("eval error: ", error);
-  }
-}
+// publicAPI.clear();
+// for (let x = -count; x <= count; x++) {
+//   for (let y = -count; y <= count; y++) {
+//     let circleX = x / count;
+//     let circleY = y / count;
+//     let dx = circleX - mouseX;
+//     let dy = circleY - mouseY;
+//     let radius = Math.sqrt(dx * dx + dy * dy) / 10;
+//     if (radius > distance / 2.5) {
+//       publicAPI.rectFill(circleX, circleY, distance, distance);
+//     } else {
+//       publicAPI.circFill(circleX, circleY, radius);
+//     }
+//   }
+// }
 
 const divStyle = {
   width: "100vw",
@@ -103,12 +91,21 @@ const divStyle = {
   gridTemplateAreas: `
     'editor renderer'
   `,
-  gridTemplateColumns: "25vw 75vw"
+  gridTemplateColumns: "25vw 75vw",
+  gridTemplateRows: "100%"
 }
 
 const App: React.FC = () => {
   const monocoEditor = useRef(null)
   const [ code, setCode ] = useState(initialCode)
+
+  function setEditor(editor: any) {
+    monocoEditor.current = editor;
+  }
+
+  function willMount() {
+    monaco.editor.defineTheme("vector-8", theme as any);
+  }
 
   useEffect(() => {
     window.addEventListener('resize', () => {
@@ -116,46 +113,22 @@ const App: React.FC = () => {
     })
   }, [])
 
-  useEffect(() => {
-    evalCode(code);
-  }, [code])
-
-  function setEditor(editor) {
-    monocoEditor.current = editor;
-  }
-
   return (
     <div style={divStyle}>
       <div style={{ gridArea: 'editor' }}>
         <MonacoEditor
           language="javascript"
-          theme="vs-dark"
+          theme="vector-8"
           editorDidMount={setEditor} 
+          editorWillMount={willMount}
           value={code}
           onChange={setCode} />
       </div>
-      <div style={{ gridArea: 'renderer', height: "100vh" }}>
-        <GameComponent />
+      <div style={{ gridArea: 'renderer' }}>
+        <Game code={code} />
       </div>
     </div>
   );
 };
-
-let state: any = null;
-function drawFrame() {
-  if (realm) {
-    realm.global.mouseX = mouseX;
-    realm.global.mouseY = mouseY;
-    try {
-      state = realm.global.update(state);
-      realm.global.draw(state);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  draw();
-  requestAnimationFrame(drawFrame);
-}
-requestAnimationFrame(drawFrame);
 
 render(<App/>, document.getElementById("root"));
