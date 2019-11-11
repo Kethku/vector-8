@@ -69,7 +69,14 @@ import './baseStyle.css';
 // `.trim();
 
 const initialCode = `
-draw = (circles) => {
+update = (state) => {
+  if (!state) { // Initialize if state is undefined.
+    state = {};
+  }
+  return state;
+}
+
+draw = (state) => {
   let count = 20;
   let border = 10;
   clear();
