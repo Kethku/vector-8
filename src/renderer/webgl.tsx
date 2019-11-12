@@ -1,9 +1,8 @@
-
 import * as React from "react";
 import { MutableRefObject, useState, useEffect } from 'react';
 import * as twgl from "twgl.js";
 
-import { lyonAPI } from "../lyonAPI";
+import { lyonAPI } from "../game/lyonAPI";
 
 import vertex from './shaders/vert.glsl';
 import fragment from './shaders/frag.glsl';

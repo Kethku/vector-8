@@ -1,22 +1,21 @@
 import * as React from "react";
 import { useRef, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import Realm from 'realms-shim';
 
 import { publicAPI } from "./lyonAPI";
-import { WebGL } from "./renderer/webgl";
+import { WebGL } from "../renderer/webgl";
+import {AppState} from '../reducers';
 
-export interface GameProps { 
-  code: string
-}
-
-let state: any = null;
-let mouseX = 0;
-let mouseY = 0;
-
-export function Game({ code }: GameProps) {
+export function Game() {
   const animationRequest = useRef<number>();
-  const [realm, setRealm] = useState(null);
   const webGLDrawRef = useRef<() => void>();
+  const [realm, setRealm] = useState(null);
+
+  const stateRef = useRef<any>();
+  const mousePositionRef = useRef<{ x: number, y: number }>();
+
+  const code = useSelector((state: AppState) => state.editor.code);
 
   useEffect(() => {
     evalCode(code);
@@ -41,11 +40,11 @@ export function Game({ code }: GameProps) {
 
   function drawFrame() {
     if (realm) {
-      realm.global.mouseX = mouseX;
-      realm.global.mouseY = mouseY;
+      realm.global.mouseX = mousePositionRef.current?.x ?? 0;
+      realm.global.mouseY = mousePositionRef.current?.y ?? 0;
       try {
-        state = realm.global.update(state);
-        realm.global.draw(state);
+        stateRef.current = realm.global.update(stateRef.current);
+        realm.global.draw(stateRef.current);
       } catch (error) {
         console.error(error);
       }
@@ -54,9 +53,8 @@ export function Game({ code }: GameProps) {
     animationRequest.current = requestAnimationFrame(drawFrame);
   }
 
-  function mouseMoved(newMouseX: number, newMouseY: number) {
-    mouseX = newMouseX;
-    mouseY = newMouseY;
+  function mouseMoved(x: number, y: number) {
+    mousePositionRef.current = { x, y };
   }
 
   useEffect(() => {

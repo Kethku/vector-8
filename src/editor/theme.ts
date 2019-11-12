@@ -81,6 +81,7 @@ export const theme = {
     'editor.indentGuides': '#EFD98D',
     'editor.activeIndentGuides': '#EFD98D',
     'editor.selectionHighlight': '#EFD98D',
-    'editor.selectionBackground': '#181B22' 
+    'editor.selectionBackground': '#272F3B',
+    'editorLineNumber.foreground': '#F9E0BC'
   }
 };

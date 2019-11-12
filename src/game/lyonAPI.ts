@@ -1,7 +1,7 @@
-export let lyonAPI: typeof import("../pkg");
+export let lyonAPI: typeof import("../../pkg");
 
 (async () => {
-  lyonAPI = await import("../pkg");
+  lyonAPI = await import("../../pkg");
   publicAPI.clear();
 })();
 
