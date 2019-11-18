@@ -1,7 +1,7 @@
 attribute vec2 a_position;
-attribute vec4 a_color;
+attribute float a_color;
 
-varying highp vec4 v_color;
+varying highp float v_color;
 
 uniform vec4 u_camera_dimensions;
 

@@ -1,28 +1,18 @@
 import * as React from 'react';
+import SplitPane from 'react-split-pane';
 
+import { MediaControls } from "./mediaControls";
 import { Editor } from "./editor";
 import { Game } from "./game";
 
-const divStyle = {
-  width: "100vw",
-  height: "100vh",
-  display: 'grid',
-  gridTemplateAreas: `
-    'editor renderer'
-  `,
-  gridTemplateColumns: "25vw 75vw",
-  gridTemplateRows: "100%"
-}
-
 export function App() {
   return (
-    <div style={divStyle}>
-      <div style={{ gridArea: 'editor' }}>
+    <SplitPane split="vertical" minSize={200} defaultSize={550}>
+      <div style={{ width: "100%", height: "100%" }}>
+        <MediaControls />
         <Editor />
       </div>
-      <div style={{ gridArea: 'renderer' }}>
-        <Game />
-      </div>
-    </div>
+      <Game />
+    </SplitPane>
   );
 };

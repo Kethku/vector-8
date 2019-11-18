@@ -1,4 +1,5 @@
 body {
+  background: #0A0A10;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -10,4 +11,25 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.Resizer {
+  z-index: 1;
+}
+
+.Resizer.horizontal {
+  height: 2px;
+  background: #181B22;
+  cursor: row-resize;
+  width: 100%;
+}
+
+.Resizer.vertical {
+  width: 2px;
+  background: #181B22;
+  cursor: col-resize !important;
+}
+
+.HoveredCall {
+  background: #35544A;
 }

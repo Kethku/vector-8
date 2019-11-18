@@ -27,7 +27,7 @@ export const theme = {
     { token: 'variable', foreground: color4HexText }, // #757F55
     { token: 'variable.predefined', foreground: color3HexText }, // #35544A
     { token: 'constant', foreground: color4HexText }, // #757F55
-    { token: 'comment', foreground: color6HexText }, // #EFD98D
+    { token: 'comment', foreground: color3HexText }, // #35544A
     { token: 'number', foreground: color5HexText }, // #C5BB63
     { token: 'number.hex', foreground: color5HexText }, // #C5BB63
     { token: 'regexp', foreground: color5HexText }, // #C5BB63
@@ -82,6 +82,17 @@ export const theme = {
     'editor.activeIndentGuides': '#EFD98D',
     'editor.selectionHighlight': '#EFD98D',
     'editor.selectionBackground': '#272F3B',
-    'editorLineNumber.foreground': '#F9E0BC'
+    'editorLineNumber.foreground': '#272F3B',
+
+    'editorSuggestWidget.background': '#181B22',
+    'editorSuggestWidget.border': '#272F3B',
+    'editorSuggestWidget.selectedBackground': '#272F3B',
+    'editorSuggestWidget.highlightForeground': '#757F55',
+
+    'editorHoverWidget.background': '#181B22',
+    'editorHoverWidget.border': '#272F3B',
+
+    'editor.wordHighlightBackground': '#181B22',
+    'editor.wordHighlightStrongBackground': '#272F3B',
   }
 };

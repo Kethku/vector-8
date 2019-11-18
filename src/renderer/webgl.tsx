@@ -28,7 +28,7 @@ export function WebGL({ mouseMoved, drawRef }: WebGLProps) {
       newGl.useProgram(newSpriteProgram.program);
       let newSpriteArrays = {
         a_position: {numComponents: 2, data: new Float32Array(0), drawType: newGl.DYNAMIC_DRAW},
-        a_color: {numComponents: 4, data: new Float32Array(0), drawType: newGl.DYNAMIC_DRAW},
+        a_color: {numComponents: 1, data: new Float32Array(0), drawType: newGl.DYNAMIC_DRAW},
         indices: {numComponents: 3, data: new Uint32Array(0), drawType: newGl.DYNAMIC_DRAW}
       };
       let newBufferInfo = twgl.createBufferInfoFromArrays(newGl, newSpriteArrays);
@@ -41,6 +41,17 @@ export function WebGL({ mouseMoved, drawRef }: WebGLProps) {
         let mouseX = (e.clientX - canvasRect.left) * 2 / canvasRect.width - 1;
         let mouseY = -(e.clientY - canvasRect.top) * 2 / canvasRect.width + canvasRect.height / canvasRect.width;
         mouseMoved && mouseMoved(mouseX, mouseY);
+      });
+
+      twgl.setUniforms(newSpriteProgram, {
+        u_color_0: [0.039216, 0.039216, 0.062745],
+        u_color_1: [0.094118, 0.105882, 0.133333],
+        u_color_2: [0.152941, 0.184314, 0.231373],
+        u_color_3: [0.207843, 0.329412, 0.290196],
+        u_color_4: [0.458824, 0.498039, 0.333333],
+        u_color_5: [0.772549, 0.733333, 0.388235],
+        u_color_6: [0.937255, 0.85098, 0.552941],
+        u_color_7: [0.976471, 0.878431, 0.737255]
       });
 
       setGl(newGl);
@@ -64,7 +75,7 @@ export function WebGL({ mouseMoved, drawRef }: WebGLProps) {
       gl.viewport(0, 0, canvas.width, canvas.height);
 
       twgl.setUniforms(spriteProgram, {
-        u_camera_dimensions: [-1, -canvas.height / canvas.width, 2, 2 * canvas.height / canvas.width],
+        u_camera_dimensions: [-1, -canvas.height / canvas.width, 2, 2 * canvas.height / canvas.width]
       });
       lyonAPI.setPixelSize(Math.min(2 / canvas.width, 2 / canvas.height));
 

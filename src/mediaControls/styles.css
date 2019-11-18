@@ -1,0 +1,63 @@
+.media-controls {
+  height: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px;
+  margin-right: 30px;
+}
+
+.media-button {
+  color: #35544A;
+  margin-right: 20px;
+}
+
+.media-button:hover {
+  color: #757F55;
+}
+
+.media-controls > .rc-slider {
+  flex-grow: 1;
+  margin-right: 20px;
+}
+
+.media-controls > .rc-slider > .rc-slider-rail {
+  background-color: #35544A
+}
+
+.media-controls > .rc-slider > .rc-slider-track {
+  background-color: #757F55
+}
+
+.media-controls > .rc-slider > .rc-slider-handle {
+  background-color: #757F55;
+  border: solid 2px #757F55;
+}
+
+.media-controls > .rc-slider > .rc-slider-handle:active {
+  box-shadow: 0 0 5px #757F55;
+}
+
+.media-controls > .rc-slider {
+  background-color: transparent
+}
+
+.media-controls > .rc-slider-disabled > .rc-slider-rail {
+  background-color: #272F3B
+}
+
+.media-controls > .rc-slider-disabled > .rc-slider-track {
+  background-color: #272F3B
+}
+
+.media-controls > .rc-slider-disabled > .rc-slider-handle {
+  background-color: #272F3B;
+  border: solid 2px #272F3B;
+}
+
+.media-controls > .rc-slider-disabled > .rc-slider-handle:active {
+  box-shadow: 0 0 5px #272F3B;
+}

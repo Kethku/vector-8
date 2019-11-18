@@ -1,3 +1,6 @@
+import { useRef, useEffect, MutableRefObject } from "react";
+import { useSelector } from "react-redux";
+
 export type Common<A, B> = {
   [P in keyof A & keyof B]: A[P] | B[P]
 };
@@ -17,4 +20,15 @@ export function spliceData(array: {numComponents: number, data: Float32Array | U
 
 export function unreachable(obj: never) { 
   throw new Error(`${obj} should not exist`) 
+}
+
+export function useSelectorRef<R>(selector: (state: any) => R) {
+  const ref = useRef<R>();
+  const selected = useSelector(selector);
+
+  useEffect(() => {
+    ref.current = selected;
+  }, [selected]);
+
+  return [selected, ref] as [R, MutableRefObject<R>];
 }

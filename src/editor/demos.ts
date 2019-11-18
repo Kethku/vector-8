@@ -1,8 +1,8 @@
 export const orbits = `
-const count = 500;
+const count = 400;
 
 function initCircle() {
-  let x = Math.random() * 2 - 1;
+  let x = random() * 2 - 1;
   return {
     x,
     y: 0.5,
@@ -10,22 +10,19 @@ function initCircle() {
     vy: 0,
     radius: (x + 1.5) / 50,
     color: Math.floor(
-      Math.random() * 7
+      random() * 7
     ) + 1
   }
 }
+let state = [];
+for (let i = 0; i < count; i++) {
+  state.push(initCircle());
+}
+const initialState = Immutable.fromJS(state);
 
-update = (state) => {
-  if (!state) {
-    state = [];
-    for (let i = 0; i < count; i++) {
-      state.push(initCircle());
-    }
-  }
-
-  let newState = [];
-  for (let circle of state) {
-    let { x, y, vx, vy, radius } = circle;
+function update(state) {
+  return state.map(circle => {
+    let { x, y, vx, vy, radius } = circle.toJS();
     let dx = mouseX - x;
     let dy = mouseY - y;
 
@@ -34,38 +31,29 @@ update = (state) => {
     let ax = dx / Math.pow(dist, 1.5);
     let ay = dy / Math.pow(dist, 1.5);
 
-    newState.push({
-      ...circle,
+    return circle.merge({
       x: x + vx,
       y: y + vy,
       vx: vx * 0.99 + ax / radius / 100000,
       vy: vy * 0.99 + ay / radius / 100000
-    });
-  }
-
-  return newState;
+    })
+  });
 }
 
-draw = (circles) => {
+function draw(circles) {
   clear();
   for (let circle of circles) {
-    circFill(
-      circle.x, circle.y, 
-      circle.radius, 
-      circle.color);
+    let { x, y, radius, color } = circle.toJS();
+    fillCircle(
+      x, y, 
+      radius, 
+      color);
   }
 }
 `.trim();
 
 export const circleGrid = `
-update = (state) => {
-  if (!state) { // Initialize if state is undefined.
-    state = {};
-  }
-  return state;
-}
-
-draw = (state) => {
+function draw(state) {
   let count = 20;
   let border = 10;
   clear();
@@ -78,7 +66,7 @@ draw = (state) => {
       let distance = Math.sqrt(dx * dx + dy * dy);
       let radius = distance / 10;
       let color = x + y + mouseX * 10 + mouseY * 10;
-      circFill(circleX, circleY, radius, color);
+      fillCircle(circleX, circleY, radius, color);
     }
   }
 }

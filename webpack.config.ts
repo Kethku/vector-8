@@ -15,7 +15,7 @@ const config: webpack.Configuration = {
     chunkFilename: '[name].[chunkhash:8].chunk.js'
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', ".glsl", '.css', '.rs']
+    extensions: ['.ts', '.tsx', '.js', '.glsl', '.txt', '.css', '.rs']
   },
   module: {
     strictExportPresence: true,
@@ -32,7 +32,7 @@ const config: webpack.Configuration = {
         }
       },
       {
-        test: /\.glsl$/,
+        test: /\.(glsl|txt)$/,
         use: {
           loader: 'raw-loader'
         }
@@ -52,7 +52,7 @@ const config: webpack.Configuration = {
     }),
     new HtmlWebpackRootPlugin(),
     new MonacoWebpackPlugin({
-      languages: ['javascript']
+      languages: ['javascript', 'typescript']
     }),
     new WasmPackPlugin({
       crateDirectory: path.resolve(__dirname, ".")

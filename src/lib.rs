@@ -1,11 +1,12 @@
 extern crate console_error_panic_hook;
+extern crate bincode;
 extern crate lyon;
 extern crate wasm_bindgen;
 extern crate web_sys;
 
 use lyon::math::{Point, point, rect};
 use lyon::tessellation::geometry_builder::{GeometryBuilder, VertexId, GeometryBuilderError};
-use lyon::tessellation::{StrokeVertex, FillVertex, StrokeOptions, FillOptions, Count};
+use lyon::tessellation::{StrokeVertex, FillVertex, StrokeOptions, FillOptions, FillTessellator, Count};
 use lyon::tessellation::basic_shapes::*;
 use std::cell::RefCell;
 use std::u32;
@@ -30,6 +31,7 @@ impl HasPosition for StrokeVertex {
 struct Outputs {
   pub positions: Vec<f32>,
   pub colors: Vec<f32>,
+  pub ids: Vec<f32>,
   pub indices: Vec<u32>
 }
 
@@ -38,24 +40,31 @@ impl Outputs {
     Outputs {
       positions: Vec::new(),
       colors: Vec::new(),
+      ids: Vec::new(),
       indices: Vec::new()
     }
   }
 }
 
 struct ToFloatArrayWithColor<'l> {
-  color: [f32; 4],
+  color: f32,
+  id_r: f32,
+  id_g: f32,
+  id_b: f32,
   data: &'l mut Outputs,
   vertex_offset: u32,
   index_offset: u32
 }
 
 impl<'l> ToFloatArrayWithColor<'l> {
-  pub fn new(color: [f32; 4], data: &'l mut Outputs) -> Self {
+  pub fn new(color: f32, id_r: f32, id_g: f32, id_b: f32, data: &'l mut Outputs) -> Self {
     let vertex_offset = data.positions.len() as u32;
     let index_offset = data.indices.len() as u32;
     ToFloatArrayWithColor {
       color,
+      id_r,
+      id_g,
+      id_b,
       data,
       vertex_offset,
       index_offset 
@@ -63,8 +72,7 @@ impl<'l> ToFloatArrayWithColor<'l> {
   }
 }
 
-impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<'l> {
-  fn begin_geometry(&mut self) { 
+impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<'l> { fn begin_geometry(&mut self) { 
     console_error_panic_hook::set_once();
     self.vertex_offset = self.data.positions.len() as u32;
     self.index_offset = self.data.indices.len() as u32;
@@ -80,10 +88,10 @@ impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<
     let position = vertex.get_position();
     self.data.positions.push(position.x);
     self.data.positions.push(position.y);
-    self.data.colors.push(self.color[0]);
-    self.data.colors.push(self.color[1]);
-    self.data.colors.push(self.color[2]);
-    self.data.colors.push(self.color[3]);
+    self.data.colors.push(self.color);
+    self.data.ids.push(self.id_r);
+    self.data.ids.push(self.id_g);
+    self.data.ids.push(self.id_b);
     if self.data.colors.len() >= u32::MAX as usize {
       return Err(GeometryBuilderError::TooManyVertices);
     }
@@ -101,27 +109,14 @@ impl<'l, Vertex: HasPosition> GeometryBuilder<Vertex> for ToFloatArrayWithColor<
   fn abort_geometry(&mut self) {
     self.data.positions.truncate(self.vertex_offset as usize);
     self.data.indices.truncate(self.index_offset as usize);
+    self.data.colors.truncate(self.vertex_offset as usize / 2);
+    self.data.ids.truncate(self.vertex_offset as usize * 3 / 2);
   }
-}
-
-const COLORS: [[f32; 4]; 8] = [
-  [0.039216, 0.039216, 0.062745, 1.0],
-  [0.094118, 0.105882, 0.133333, 1.0],
-  [0.152941, 0.184314, 0.231373, 1.0],
-  [0.207843, 0.329412, 0.290196, 1.0],
-  [0.458824, 0.498039, 0.333333, 1.0],
-  [0.772549, 0.733333, 0.388235, 1.0],
-  [0.937255, 0.85098, 0.552941, 1.0],
-  [0.976471, 0.878431, 0.737255, 1.0]
-];
-
-fn lookup_color(index: usize) -> [f32; 4] {
-  COLORS[index % 8]
 }
 
 thread_local!(static OUTPUT: RefCell<Outputs> = RefCell::new(Outputs::new()));
 thread_local!(static STROKE_OPTIONS: RefCell<StrokeOptions> = RefCell::new(StrokeOptions::DEFAULT));
-thread_local!(static FILL_OPTIONS: RefCell<FillOptions> = RefCell::new(FillOptions::DEFAULT));
+thread_local!(static FILL_OPTIONS: RefCell<FillOptions> = RefCell::new(FillOptions::DEFAULT.assume_no_intersections()));
 
 fn stroke_options() -> StrokeOptions {
   STROKE_OPTIONS.with(|stroke_options| stroke_options.borrow().clone())
@@ -154,49 +149,137 @@ pub extern fn js_set_pixel_size(pixel_size: f32) {
   update_fill_options(|&mut fill_options| fill_options.with_tolerance(new_tolerance));
 }
 
+#[wasm_bindgen(js_name = "setLineWidth")]
+pub extern fn js_line_width(width: f32) {
+  update_stroke_options(|&mut stroke_options| {
+    stroke_options.with_line_width(width)
+  });
+}
+
+#[wasm_bindgen(js_name = "strokeTriangle")]
+pub extern fn js_stroke_triangle(x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    stroke_triangle(
+      point(x1, y1),
+      point(x2, y2),
+      point(x3, y3),
+      &stroke_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+#[wasm_bindgen(js_name = "strokeQuad")]
+pub extern fn js_stroke_quad(x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, x4: f32, y4: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    stroke_quad(
+      point(x1, y1),
+      point(x2, y2),
+      point(x3, y3),
+      point(x4, y4),
+      &stroke_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+
 #[wasm_bindgen(js_name = "strokeRectangle")]
-pub extern fn js_stroke_rectangle(x: f32, y: f32, width: f32, height: f32, color: usize) {
+pub extern fn js_stroke_rectangle(x: f32, y: f32, width: f32, height: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
   OUTPUT.with(|output_cell| {
     let mut output = output_cell.borrow_mut();
     stroke_rectangle(
-      &rect(x, y, width, height),
+      &rect(x - width / 2.0, y - height / 2.0, width, height),
       &stroke_options(),
-      &mut ToFloatArrayWithColor::new(lookup_color(color), &mut output))
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+#[wasm_bindgen(js_name = "strokePolyLine")]
+pub extern fn js_stroke_polyline(points: Vec<f32>, closed: bool, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    let constructed_points = points.chunks(2).map(|chunk| point(chunk[0], chunk[1]));
+    stroke_polyline(
+      constructed_points,
+      closed,
+      &stroke_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
   });
 }
 
 #[wasm_bindgen(js_name = "strokeCircle")]
-pub extern fn js_stroke_circle(x: f32, y: f32, r: f32, color: usize) {
+pub extern fn js_stroke_circle(x: f32, y: f32, r: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
   OUTPUT.with(|output_cell| {
     let mut output = output_cell.borrow_mut();
     stroke_circle(
       point(x, y),
       r,
       &stroke_options(),
-      &mut ToFloatArrayWithColor::new(lookup_color(color), &mut output))
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+#[wasm_bindgen(js_name = "fillTriangle")]
+pub extern fn js_fill_triangle(x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    fill_triangle(
+      point(x1, y1),
+      point(x2, y2),
+      point(x3, y3),
+      &fill_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+#[wasm_bindgen(js_name = "fillQuad")]
+pub extern fn js_fill_quad(x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, x4: f32, y4: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    fill_quad(
+      point(x1, y1),
+      point(x2, y2),
+      point(x3, y3),
+      point(x4, y4),
+      &fill_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
   });
 }
 
 #[wasm_bindgen(js_name = "fillRectangle")]
-pub extern fn js_fill_rectangle(x: f32, y: f32, width: f32, height: f32, color: usize) {
+pub extern fn js_fill_rectangle(x: f32, y: f32, width: f32, height: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
   OUTPUT.with(|output_cell| {
     let mut output = output_cell.borrow_mut();
     fill_rectangle(
-      &rect(x, y, width, height),
+      &rect(x - width / 2.0, y - height / 2.0, width, height),
       &fill_options(),
-      &mut ToFloatArrayWithColor::new(lookup_color(color), &mut output))
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
+  });
+}
+
+#[wasm_bindgen(js_name = "fillPolyLine")]
+pub extern fn js_fill_polyline(points: Vec<f32>, color: f32, id_r: f32, id_g: f32, id_b: f32) {
+  OUTPUT.with(|output_cell| {
+    let mut output = output_cell.borrow_mut();
+    let constructed_points = points.chunks(2).map(|chunk| point(chunk[0], chunk[1]));
+    fill_polyline(
+      constructed_points,
+      &mut FillTessellator::new(),
+      &fill_options(),
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
   });
 }
 
 #[wasm_bindgen(js_name = "fillCircle")]
-pub extern fn js_fill_circle(x: f32, y: f32, r: f32, color: usize) {
+pub extern fn js_fill_circle(x: f32, y: f32, r: f32, color: f32, id_r: f32, id_g: f32, id_b: f32) {
   OUTPUT.with(|output_cell| {
     let mut output = output_cell.borrow_mut();
     fill_circle(
       point(x, y),
       r,
       &fill_options(),
-      &mut ToFloatArrayWithColor::new(lookup_color(color), &mut output))
+      &mut ToFloatArrayWithColor::new(color, id_r, id_g, id_b, &mut output))
   });
 }
 
@@ -214,6 +297,13 @@ pub fn js_get_colors() -> Box<[f32]> {
   })
 }
 
+#[wasm_bindgen(js_name = "getId")]
+pub fn js_get_ids() -> Box<[f32]> {
+  OUTPUT.with(|output_cell| {
+    output_cell.borrow().ids.clone().into_boxed_slice()
+  })
+}
+
 #[wasm_bindgen(js_name = "getIndices")]
 pub fn js_get_indices() -> Box<[u32]> {
   OUTPUT.with(|output_cell| {
@@ -227,6 +317,7 @@ pub fn js_reset() {
     let mut output = output_cell.borrow_mut();
     output.positions.clear();
     output.colors.clear();
+    output.ids.clear();
     output.indices.clear();
-  })
+  });
 }
