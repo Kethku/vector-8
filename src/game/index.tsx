@@ -8,11 +8,11 @@ import { publicAPI, updateHighlightFlicker } from "./lyonAPI";
 import { WebGL } from "../renderer/webgl";
 import { Node, injectHighlights } from "../rewrite/callHighlighting";
 import { injectGlobalGatheringCode } from "../rewrite/gatherGlobals";
-import { setRewindAmount } from "../mediaControls/actions";
+import { setRewindAmount, setPaused } from "../mediaControls/actions";
 import { AppState } from '../reducers';
 import { useSelectorRef } from '../utils';
 
-const statesToStore = 600;
+const statesToStore = 100;
 
 const expectedGlobals = { 
   'update': "(state) => state", 
@@ -47,22 +47,22 @@ function cloneIfNecessary(obj: any) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+interface StoredState {
+  state: any;
+  mousePosition?: { x: number, y: number };
+}
+
 export function Game() {
   const dispatch = useDispatch();
 
-  const animationRequestRef = useRef<number>();
-  const webGLDrawRef = useRef<() => void>();
   const realmRef = useRef<any>();
-  const lastFrameRef = useRef<number>();
   const resultingGlobalsRef = useRef<any>();
-  const stateQueueRef = useRef<any[]>();
+  const stateQueueRef = useRef<StoredState[]>();
   const mousePositionRef = useRef<{ x: number, y: number }>();
 
   const [paused, pausedRef] = useSelectorRef((state: AppState) => state.mediaControls.paused);
   const [rewindAmount, rewindAmountRef] = useSelectorRef((state: AppState) => { 
-    let amount = Math.floor(state.mediaControls.rewindAmount * ((stateQueueRef.current?.length ?? 1) - 1))
-    console.log(amount)
-    return amount;
+    return Math.floor(state.mediaControls.rewindAmount * ((stateQueueRef.current?.length ?? 1) - 1))
   });
 
   const code = useSelector((state: AppState) => state.editor.code);
@@ -81,7 +81,20 @@ export function Game() {
     }
   }, [paused, rewindAmount]);
 
+  function updateState(realm: any, previousState: StoredState) {
+    realm.global.mouseX = previousState.mousePosition.x ?? 0;
+    realm.global.mouseY = previousState.mousePosition.y ?? 0;
+    return cloneIfNecessary(resultingGlobalsRef.current.update(previousState.state))
+  }
+
+  function drawState(realm: any, state: StoredState) {
+    realm.global.mouseX = state.mousePosition.x ?? 0;
+    realm.global.mouseY = state.mousePosition.y ?? 0;
+    resultingGlobalsRef.current.draw(state.state);
+  }
+
   function evalCode(code: string, callUnderMouse: Node) {
+    console.log(code)
     for (let element of document.getElementsByTagName("iframe") as any) {
       element.parentNode.removeChild(element);
     }
@@ -103,9 +116,21 @@ export function Game() {
     try {
       let newGlobals = newRealm.evaluate(code);
       if (!objectsDeepEqual(newGlobals.initialState, resultingGlobalsRef?.current?.initialState)) {
-        stateQueueRef.current = [newGlobals.initialState];
-      }
+        stateQueueRef.current = [{ state: newGlobals.initialState, mousePosition: mousePositionRef.current }];
+        dispatch(setPaused(false));
+      } 
+
       resultingGlobalsRef.current = newGlobals;
+
+      if (paused && stateQueueRef.current.length > 1) {
+        let state = stateQueueRef.current[stateQueueRef.current.length - 1];
+        let newStates = [state];
+        for (let i = stateQueueRef.current.length - 2; i >= 0; i--) {
+          state = { state: updateState(newRealm, state), mousePosition: stateQueueRef.current[i]?.mousePosition };
+          newStates.unshift(state);
+        }
+        stateQueueRef.current = newStates;
+      }
     } catch (error) {
       console.log("syntax error: ", error);
       console.log("augmented source: ", code);
@@ -114,39 +139,26 @@ export function Game() {
     realmRef.current = newRealm;
   }
 
-  function drawFrame() {
-    let realm = realmRef.current;
-    let currentTime = Date.now();
-    if (realm && (!lastFrameRef.current || (currentTime - lastFrameRef.current > 16.666))) {
-      lastFrameRef.current = Date.now();
-      realm.global.mouseX = mousePositionRef.current?.x ?? 0;
-      realm.global.mouseY = mousePositionRef.current?.y ?? 0;
-      try {
-        if (!pausedRef.current) {
-          let newState = cloneIfNecessary(resultingGlobalsRef.current.update(stateQueueRef.current[0]))
-          stateQueueRef.current.unshift(newState);
-          if (stateQueueRef.current.length > statesToStore) {
-            stateQueueRef.current.pop();
-          }
+  function onFrame() {
+    try {
+      if (!pausedRef.current) {
+        stateQueueRef.current[0].mousePosition = mousePositionRef.current ?? { x: 0, y: 0 };
+        let newState = updateState(realmRef.current, stateQueueRef.current[0]);
+        stateQueueRef.current.unshift({ state: newState, mousePosition: stateQueueRef.current[0].mousePosition });
+        if (stateQueueRef.current.length > statesToStore) {
+          stateQueueRef.current.pop();
         }
-        updateHighlightFlicker();
-        resultingGlobalsRef.current.draw(stateQueueRef.current[rewindAmountRef.current]);
-      } catch (error) {
-        console.error(error);
       }
+      updateHighlightFlicker();
+      drawState(realmRef.current, stateQueueRef.current[rewindAmountRef.current]);
+    } catch (error) {
+      console.error(error);
     }
-    webGLDrawRef.current && webGLDrawRef.current();
-    animationRequestRef.current = requestAnimationFrame(drawFrame);
   }
 
-  function mouseMoved(x: number, y: number) {
+  function mouseEvent(x: number, y: number) {
     mousePositionRef.current = { x, y };
   }
 
-  useEffect(() => {
-    animationRequestRef.current = requestAnimationFrame(drawFrame);
-    return () => cancelAnimationFrame(animationRequestRef.current);
-  }, [])
-
-  return <WebGL mouseMoved={mouseMoved} drawRef={webGLDrawRef} />;
+  return <WebGL mouseEvent={mouseEvent} onFrame={onFrame} />;
 }

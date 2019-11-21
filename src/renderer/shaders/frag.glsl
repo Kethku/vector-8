@@ -29,6 +29,5 @@ void main() {
     gl_FragColor = vec4(u_color_6, 1.0);
   } else if (index == 7) {
     gl_FragColor = vec4(u_color_7, 1.0);
-  } else {
   }
 }
