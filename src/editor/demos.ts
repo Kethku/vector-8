@@ -18,11 +18,11 @@ let state = [];
 for (let i = 0; i < count; i++) {
   state.push(initCircle());
 }
-const initialState = Immutable.fromJS(state);
+const initialState = state;
 
 function update(state) {
-  return state.map(circle => {
-    let { x, y, vx, vy, radius } = circle.toJS();
+  for (let circle of state) {
+    let { x, y, vx, vy, radius } = circle;
     let dx = mouseX - x;
     let dy = mouseY - y;
 
@@ -31,19 +31,18 @@ function update(state) {
     let ax = dx / Math.pow(dist, 1.5);
     let ay = dy / Math.pow(dist, 1.5);
 
-    return circle.merge({
-      x: x + vx,
-      y: y + vy,
-      vx: vx * 0.99 + ax / radius / 100000,
-      vy: vy * 0.99 + ay / radius / 100000
-    })
-  });
+    circle.x = x + vx;
+    circle.y = y + vy;
+    circle.vx = vx * 0.99 + ax / radius / 100000;
+    circle.vy = vy * 0.99 + ay / radius / 100000;
+  }
+  return state;
 }
 
 function draw(circles) {
   clear();
   for (let circle of circles) {
-    let { x, y, radius, color } = circle.toJS();
+    let { x, y, radius, color } = circle;
     fillCircle(
       x, y, 
       radius, 

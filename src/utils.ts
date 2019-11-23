@@ -32,3 +32,26 @@ export function useSelectorRef<R>(selector: (state: any) => R) {
 
   return [selected, ref] as [R, MutableRefObject<R>];
 }
+
+export interface RandomConstants {
+  a: number, b: number, c: number, d: number
+}
+
+export function sfc32(constants?: RandomConstants) {
+  constants = constants ?? { a: 0, b: 0, c: 0, d: 0 };
+  return function() {
+    constants.a >>>= 0; 
+    constants.b >>>= 0; 
+    constants.c >>>= 0; 
+    constants.d >>>= 0; 
+
+    var t = (constants.a + constants.b) | 0;
+    constants.a = constants.b ^ constants.b >>> 9;
+    constants.b = constants.c + (constants.c << 3) | 0;
+    constants.c = (constants.c << 21 | constants.c >>> 11);
+    constants.d = constants.d + 1 | 0;
+    t = t + constants.d | 0;
+    constants.c = constants.c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+}

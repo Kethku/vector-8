@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import * as twgl from "twgl.js";
 
 import { lyonAPI } from "../game/lyonAPI";
@@ -92,6 +92,7 @@ export function WebGL({ mouseEvent, onFrame }: WebGLProps) {
       spriteArraysRef.current.a_position.data = lyonAPI.getPositions();
       spriteArraysRef.current.a_color.data = lyonAPI.getColors();
       spriteArraysRef.current.indices.data = lyonAPI.getIndices();
+
 
       for (let id in spriteArraysRef.current) {
         if (id != "indices") {

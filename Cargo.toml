@@ -3,6 +3,10 @@ authors = ["Keith Simmons <keith@the-simmons.net>"]
 name = "vector-8"
 version = "0.0.1"
 
+[profile.dev]
+lto = true
+opt-level = 3
+
 [lib]
 crate-type = ["cdylib"]
 
